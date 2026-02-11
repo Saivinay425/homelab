@@ -23,3 +23,18 @@ Baseline observed: 10 events in 24h
 Chosen threshold: 200 events within 10 minutes
 Reason: Threshold is far above normal usage; detects beacon-like behavior
 
+## Severity Classification
+4625 Brute Force → Medium  
+Reason: Authentication attack attempt; may be noise but indicates credential abuse risk.
+
+4720 New User Created → High  
+Reason: Persistence technique; rare and high-impact if unauthorized.
+
+4732 Admin Group Add → Critical  
+Reason: Direct privilege escalation; full system compromise risk.
+
+Sysmon Encoded PowerShell → High  
+Reason: Strong execution indicator; commonly used for malware or lateral movement.
+
+High DNS Rate (Beacon-like) → Medium  
+Reason: Possible C2 behavior but requires investigation to confirm malicious intent.
