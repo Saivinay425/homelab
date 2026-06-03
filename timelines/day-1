@@ -1,1 +1,112 @@
+VM1 - Kali
+VM2 - Splunk
+VM3 - windows server
+VM4 - Wazuh
 
+Specs for each VM:
+VM name               RAM                storage             processors
+kali                  2GB                80.1GB              2
+splunk                4GB                60GB                2
+wazuh                 3GB                60GB                2
+windows server        4GB                60GB                2
+
+kali intital configuration:
+1) Set the static IP - 
+sudo nano /etc/network/interfaces (opens up network config editor)
+
+auto eth0
+iface eth0 inet static
+  address 192.168.100.50
+  netmask 255.255.255.0
+  gateway 192.168.100.2
+  dns-nameservers 8.8.8.8
+(Add static IP, subnet mask, gateway and dns nameserver and save)
+2) Restart network-
+sudo systemctl restart networking
+3) Verify network connectivity with (ip a) and (ping 8.8.8.8). Ping must show responses.
+
+Splunk initial configuration:
+1) Install ubuntu server and set hostname, servername, username and password of your choice.
+2) When terminal opens, login with your credentials.
+3) Now set the static IP -
+sudo nano /etc/netplan/00-installer-config.yaml (opens up the network config file)
+
+network:
+  version: 2
+  ethernets:
+    ens33:
+      addresses:
+        - 192.168.100.10/24
+      routes:
+        - to: default
+          via: 192.168.100.2
+      nameservers:
+        addresses: [8.8.8.8]
+(Add static IP, gateway and dns nameserver and save)
+4) Restart the network -
+sudo netplan apply
+5) Verify network connectivity with (ip a) and (ping 8.8.8.8). Ping must show responses.
+6) Splunk installation:
+   - Go to https://www.splunk.com/en_us/download/splunk-enterprise.html and create a splunk account for free. 
+   - After you create the account, verify email . After that, choose the installation package. Since we are in ubuntu server, choose linux to get a wget link under .deb.
+     Example:wget -O splunk-10.4.0-f798d4d4908234-linux-amd64.deb "https://download.splunk.com/products/splunk/releases/10.4.0/linux/splunk-10.4.0-f798d4d4908234-linux-amd64.deb"
+     Copy that wget command from splunk and paste it directly into ubuntu server to start downloading.
+   - sudo dpkg -i splunk-10.4.0-f798d4d4908234-linux-amd64.deb (installation command)
+   - set admin username and password: sudo /opt/splunk/bin/splunk start --accept-license
+   - If the above one doesn't work: sudo /opt/splunk/bin/splunk start --accept-license --answer-yes --run-as-root
+   - Enable splunk to start on boot: sudo /opt/splunk/bin/splunk enable boot-start --run-as-root
+   - Splunk will be running. To open, splunk on browser, go to http://192.168.100.10:8000 (192.168.100.10 is splunk's IP address).
+
+Wazuh initial configuration:
+1) Install ubuntu server and set hostname, servername, username and password of your choice.
+2) When terminal opens, login with your credentials.
+3) Now set the static IP -
+sudo nano /etc/netplan/00-installer-config.yaml (opens up the network config file)
+
+network:
+  version: 2
+  ethernets:
+    ens33:
+      addresses:
+        - 192.168.100.30/24
+      routes:
+        - to: default
+          via: 192.168.100.2
+      nameservers:
+        addresses: [8.8.8.8]
+(Add static IP, gateway and dns nameserver and save)
+4) Restart the network -
+sudo netplan apply
+5) Verify network connectivity with (ip a) and (ping 8.8.8.8). Ping must show responses.
+6) Wazuh manager installation:
+   - Run these commands one by one:
+     curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | sudo gpg --no-default-keyring --keyring gnupg-ring:/usr/share/keyrings/wazuh.gpg --import && sudo chmod 644 /usr/share/keyrings/wazuh.gpg
+     echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" | sudo tee /etc/apt/sources.list.d/wazuh.list
+     sudo apt update && sudo apt install wazuh-manager -y
+7) Start and enable wazuh manager:
+   sudo systemctl start wazuh-manager
+   sudo systemctl enable wazuh-manager
+8) Verify if wazuh is running:
+   sudo systemctl status wazuh-manager
+
+
+Windows server initial configuration:
+Use the windows server 2022 standard evaluation desktop experience. We can get a free trial to use up to 180 days.
+1) Set static IP and DNS:
+New-NetIPAddress -InterfaceAlias "Ethernet0" -IPAddress 192.168.100.20 -PrefixLength 24 -DefaultGateway 192.168.100.2
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" -ServerAddresses 8.8.8.8
+2) Test connectivity:
+ping 8.8.8.8 . This ping must return a response.
+
+Final connectivity test:
+Power on all 4 VMs and then from Kali Linux, run pings:
+ping 192.168.100.10 (Splunk)
+ping 192.168.100.20 (Windows server)
+ping 192.168.100.30 (Wazuh)
+From windows server, 
+ping 192.168.100.50 (kali)
+- Sometimes 192.168.100.20 ping from kali may fail. This is because windows firewall is blocking ping by default. 
+netsh advfirewall firewall add rule name="Allow ICMPv4" protocol=icmpv4:8,any dir=in action=allow
+This command turns off firewall. 
+
+All pings must succeed.
